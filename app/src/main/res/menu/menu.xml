@@ -7,6 +7,11 @@
         android:title="lapiz"
         app:showAsAction="ifRoom"
         android:icon="@drawable/ic_action_name" />
+    <item
+        android:id="@+id/mnu_item_two"
+        android:title="colorear"
+        app:showAsAction="ifRoom"
+        android:icon="@drawable/ic_format_color_reset_black_24dp" />
 
 
 </menu>

@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
@@ -32,7 +33,10 @@ import static android.graphics.Color.rgb;
 public class MainActivity extends AppCompatActivity {
     public static final String TAG = "MyTouchEvent";
     public static final String colorDatos = "colores";
+    private static int activado = 1;
     private final int colorCodigo = 1001;
+    private float x1, y1, x2, y2, a1, b1, a2, b2;
+    private float m1,m2,grados;
     private int[] rgb = {0,0,0};
     @BindView(R.id.imagen)ImageView imagen;
     @SuppressLint("ClickableViewAccessibility")
@@ -44,34 +48,51 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById (R.id.toolbar);
         toolbar.setTitle ("Colorear");
         setSupportActionBar (toolbar);
+        Matrix inverse = new Matrix();
         imagen.setOnTouchListener((view,motionEvent)->{
             String message = "";
 
-            switch (motionEvent.getAction ()) {
+            switch (motionEvent.getActionMasked ()) {
+                case MotionEvent.ACTION_DOWN:
+                    x1 = motionEvent.getX ();
+                    y1 = motionEvent.getY ();
+                    break;
+                case MotionEvent.ACTION_UP:
+                    a1 = motionEvent.getX (0);
+                    b1 = motionEvent.getY (0);
+                    m2 = (a2-a1)/(b2-b1);
+                    grados = (float)Math.toDegrees((float)Math.atan((m2-m1)/(1+(m1*m2))));
+                    if(activado == 0){
+                        imagen.setRotation(imagen.getRotation() + grados);
+                        imagen.invalidate();
+                        Toast.makeText (this, "Grados: "+grados, Toast.LENGTH_SHORT).show ();
+                    }
+                    break;
                 case MotionEvent.ACTION_MOVE:
-                    Bitmap bitmap = ((BitmapDrawable)imagen.getDrawable()).getBitmap().copy(Bitmap.Config.ARGB_8888,true);
-                    Canvas canvas = new Canvas(bitmap);
-                    Paint color = new Paint();
-                    color.setColor(rgb(rgb[0],rgb[1],rgb[2]));
-                    imagen.setImageBitmap(bitmap);
-                    int diferencia = (view.getHeight()-bitmap.getHeight())/4;
+                    if(activado == 1){
+                        Bitmap bitmap = ((BitmapDrawable)imagen.getDrawable()).getBitmap().copy(Bitmap.Config.ARGB_8888,true);
+                        Canvas canvas = new Canvas(bitmap);
+                        Paint color = new Paint();
+                        color.setColor(rgb(rgb[0],rgb[1],rgb[2]));
+                        imagen.setImageBitmap(bitmap);
+                        int diferencia = (view.getHeight()-bitmap.getHeight())/4;
                         canvas.drawCircle(((motionEvent.getX()*100)/bitmap.getWidth()),((((motionEvent.getY()-diferencia)*100)/bitmap.getHeight())),5,color);
+                    }
+                    break;
+                case MotionEvent.ACTION_POINTER_DOWN:
+                    x2 = motionEvent.getX (motionEvent.getActionIndex ());
+                    y2 = motionEvent.getY (motionEvent.getActionIndex ());
+                    m1 = (y2-y1)/(x2-x1);
+                    break;
+                case MotionEvent.ACTION_POINTER_UP:
+                    a2 = motionEvent.getX (motionEvent.getActionIndex ());
+                    b2 = motionEvent.getY (motionEvent.getActionIndex ());
                     break;
             }
 
-            return super.onTouchEvent (motionEvent);
+            return true;
         });
     }
-    /*case MotionEvent.ACTION_MOVE:
-                      Bitmap bitmap = ((BitmapDrawable)imagen.getDrawable()).getBitmap();
-                      Canvas canvas = new Canvas(bitmap);
-                      Paint color = new Paint();
-                      color.setColor(rgb(rgb[0],rgb[1],rgb[2]));
-                      canvas.drawCircle(motion.getX(),motion.getY(),100,color);
-                      imagen.setImageBitmap(bitmap);
-                        message = String.format (Locale.US, "MOVING on (%.2f, %.2f)", motion.getX (), motion.getY ());
-                        Log.i ("HOLA", message);
-                    break;*/
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater ().inflate (R.menu.menu, menu);
@@ -83,6 +104,15 @@ public class MainActivity extends AppCompatActivity {
             case R.id.mnu_item_one:
                 Intent colores = new Intent(this,Colores.class);
                 startActivityForResult(colores,colorCodigo);
+                break;
+            case R.id.mnu_item_two:
+                if(activado == 1){
+                    Toast.makeText (this, "Colorear desactivado.", Toast.LENGTH_SHORT).show ();
+                    activado = 0;
+                }else{
+                    Toast.makeText (this, "Colorear activado.", Toast.LENGTH_SHORT).show ();
+                    activado = 1;
+                }
                 break;
         }
         return super.onOptionsItemSelected (item);
